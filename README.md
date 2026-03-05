@@ -14,7 +14,14 @@ Open-source evolved mathematical problems, demonstrations, and prompt templates 
 
 ## 📦 Contents
 
-### 1. Evolved Problems (`evolved_problems/`)
+### 1. Original Problems (`original_problems.json`)
+
+100 high-difficulty mathematical problems used as the seed set for evolution. Each problem includes:
+- **problem_description**: The original problem statement
+- **solution_steps**: Detailed solution with reasoning
+- **answer**: Final answer (if applicable)
+
+### 2. Evolved Problems (`evolved_problems/`)
 
 Mathematical problems evolved from original test sets using different LLM models as evolvers. Each JSON file contains 100 problems with evolution and verification metadata.
 
@@ -45,7 +52,7 @@ Mathematical problems evolved from original test sets using different LLM models
 }
 ```
 
-### 2. Math Demonstrations (`math_demonstrations/`)
+### 3. Math Demonstrations (`math_demonstrations/`)
 
 Example problem adaptations organized by mathematical category:
 - **Algebra** - Algebraic problem variations
@@ -56,13 +63,15 @@ Example problem adaptations organized by mathematical category:
 
 Each category contains JSON files with original and evolved problem pairs demonstrating the evolution methodology.
 
-### 3. Prompt Templates (`prompts/`)
+### 4. Prompt Templates (`prompts/prompt_math.py`)
 
-Core prompt template (`prompt_math.py`) for:
-- Problem evolution (creating harder variants)
-- Solvability verification
-- Difficulty assessment
-- Solution evaluation
+Complete prompt templates used in the Code2Math pipeline:
+
+1. **Evolution Prompt** - Guides LLM agents to evolve problems requiring deeper conceptual insights
+2. **Difficulty Verification Prompt** - Assesses whether evolved problems represent significant conceptual leaps
+3. **Solvability Verification Prompt** - Validates mathematical soundness and solvability (used with GPT-5.2)
+4. **Problem Solving Prompt** - Structured template for LLMs to solve mathematical problems
+5. **Evaluation Prompt** - Judges solution correctness by comparing against ground truth
 
 ## 📖 Citation
 
