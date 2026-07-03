@@ -1,0 +1,13 @@
+python-dotenv>=1.0.1
+smolagents[litellm,openai]>=1.24.0
+rich>=13.9.4
+numpy
+scipy
+pandas
+openpyxl
+sympy
+mpmath
+z3-solver
+networkx
+shapely
+pillow

@@ -2,106 +2,143 @@
 
 **Can Your Code Agent Effectively Evolve Math Problems Through Exploration?**
 
-Open-source evolved mathematical problems, demonstrations, and prompt templates from the Code2Math project.
+This repository contains the public Code2Math artifacts: seed math problems, evolved problem sets, demonstration examples, prompt templates, and the code-agent pipelines used to evolve and verify high-difficulty mathematical problems.
 
-## 📄 Paper
+Paper: [arXiv:2603.03202](https://arxiv.org/abs/2603.03202)
 
-**Code2Math: Can Your Code Agent Effectively Evolve Math Problems Through Exploration?**
+## Contents
 
-[Dadi Guo](https://github.com/), [Yuejin Xie](https://github.com/), Qingyu Liu, Jiayu Liu, Zhiyuan Fan, Qihan Ren, Shuai Shao, Tianyi Zhou, Dongrui Liu, Yi R. Fung
+- `original_problems.json` - 100 seed math problems.
+- `evolved_problems/` - evolved problem sets from the main model runs.
+- `math_demonstrations/` - few-shot demonstrations grouped by math category.
+- `prompts/prompt_math.py` - prompt templates for evolution, verification, solving, and evaluation.
+- `code2math/` - reusable Python package for the code-agent pipelines.
+- `scripts/` - command-line entry points for running the two full pipelines.
 
-📖 [arXiv:2603.03202](https://arxiv.org/abs/2603.03202)
+## The Two Full Code-Agent Pipelines
 
-## 📦 Contents
+Code2Math uses the same three-stage workflow in both variants:
 
-### 1. Original Problems (`original_problems.json`)
+1. `ProblemEvolver` proposes a harder version of a seed problem.
+2. `SolvabilityVerifier` checks that the evolved problem is well-formed and solvable.
+3. `DifficultyVerifier` checks that the new problem meaningfully increases the burden of discovery.
 
-100 high-difficulty mathematical problems used as the seed set for evolution. Each problem includes:
-- **problem_description**: The original problem statement
-- **solution_steps**: Detailed solution with reasoning
-- **answer**: Final answer (if applicable)
+The repository exposes two complete code-agent backends for this workflow:
 
-### 2. Evolved Problems (`evolved_problems/`)
+### 1. Standard CodeAgent Backend
 
-Mathematical problems evolved from original test sets using different LLM models as evolvers. Each JSON file contains 100 problems with evolution and verification metadata.
+Run with:
 
-**Available Datasets:**
-- `deepseek-v3.2_deepseek-v3.2_1_with_demo_6.json` - Evolved using DeepSeek-v3.2
-- `deepseek-reasoner_deepseek-reasoner_1_with_demo_6.json` - Evolved using DeepSeek-Reasoner
-- `gemini-3-pro-preview-thinking_gemini-3-pro-preview-thinking_1_with_demo_6.json` - Evolved using Gemini-3-Pro
-- `kimi-k2-thinking_kimi-k2-thinking_1_with_demo_6.json` - Evolved using Kimi-K2-Thinking
-- `doubao-seed-2-0-pro-260215_doubao-seed-2-0-pro-260215_1_with_demo_6.json` - Evolved using Doubao-Seed-2-Pro
+```bash
+python scripts/run_code_agent_pipeline.py --max-workers 5
+```
 
-**Entry Format:**
+This uses the standard `smolagents.CodeAgent` execution model with authorized Python imports for mathematical exploration.
+
+### 2. Interleaved-Thinking Backend
+
+Run with:
+
+```bash
+python scripts/run_interleaved_pipeline.py --max-workers 5
+```
+
+This backend keeps an OpenAI-style `messages + tool_calls + tool responses` loop and writes the full trajectory to `messages.json`. It preserves reasoning content when the model provider returns it, which is useful for inspecting thinking-model runs and retry feedback.
+
+The interleaved backend is implemented in this repository as a small compatibility layer, so users do not need to install a patched `smolagents` fork.
+
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Edit `.env` with your model endpoint and API key:
+
+```dotenv
+URL=https://your-openai-compatible-endpoint/v1
+KEY=your_api_key
+EVOLVE_MODEL=your-evolver-model
+VERIFY_MODEL=your-verifier-model
+```
+
+Qwen-style Basic-auth endpoints are also supported through `API_AK`, `API_SK`, `QWEN_THINKING_URL`, and `QWEN_INSTRUCT_URL`.
+
+## Output
+
+By default, results are written under:
+
+```text
+adapted_problems/
+  codeagent/
+  interleaved/
+```
+
+Agent logs are written under `logs/`. These generated outputs are intentionally ignored by git.
+
+Each result entry records:
+
+- pipeline status
+- failure stage, if any
+- evolved problem, solution, and answer
+- solvability-verifier output
+- difficulty-verifier output
+
+## Data Format
+
+Seed problems use:
+
 ```json
 {
-  "id": "0",
+  "problem_description": "...",
+  "solution_steps": "...",
+  "answer": "..."
+}
+```
+
+Evolved problems use:
+
+```json
+{
   "status": "success",
-  "original_problem": {
-    "problem_description": "...",
-    "solution_steps": "...",
-    "answer": "..."
-  },
   "result_data": {
-    "evolved_problem": "...",
-    "evolved_solution": "...",
-    "evolved_answer": "...",
-    "solvability_verification": {...},
-    "difficulty_verification": {...}
+    "status": true,
+    "new_problem": {
+      "new_problem": "...",
+      "new_solution_steps": "...",
+      "new_answer": "..."
+    },
+    "solvability_verifier_output": {},
+    "difficulty_verifier_output": {}
   }
 }
 ```
 
-### 3. Math Demonstrations (`math_demonstrations/`)
+## Notes
 
-Example problem adaptations organized by mathematical category:
-- **Algebra** - Algebraic problem variations
-- **Algorithm** - Algorithmic problem variants
-- **Calculus** - Calculus problem evolutions
-- **Combinatorics** - Combinatorial problem adaptations
-- **Number Sequences** - Sequence problem variations
+- Do not commit `.env`, logs, or generated run outputs.
+- The single-turn no-code pipeline used in later experiments is not part of this open-source package; this release focuses on the two full code-agent workflows.
+- The prompts and demonstrations are included so runs can be reproduced or adapted with other OpenAI-compatible model providers.
 
-Each category contains JSON files with original and evolved problem pairs demonstrating the evolution methodology.
+## Citation
 
-### 4. Prompt Templates (`prompts/prompt_math.py`)
-
-Complete prompt templates used in the Code2Math pipeline:
-
-1. **Evolution Prompt** - Guides LLM agents to evolve problems requiring deeper conceptual insights
-2. **Difficulty Verification Prompt** - Assesses whether evolved problems represent significant conceptual leaps
-3. **Solvability Verification Prompt** - Validates mathematical soundness and solvability (used with GPT-5.2)
-4. **Problem Solving Prompt** - Structured template for LLMs to solve mathematical problems
-5. **Evaluation Prompt** - Judges solution correctness by comparing against ground truth
-
-## 📖 Citation
-
-If you use these evolved problems or demonstrations in your research, please cite:
+If you use Code2Math data, prompts, or code, please cite:
 
 ```bibtex
 @misc{guo2026code2mathcodeagenteffectively,
-      title={Code2Math: Can Your Code Agent Effectively Evolve Math Problems Through Exploration?}, 
+      title={Code2Math: Can Your Code Agent Effectively Evolve Math Problems Through Exploration?},
       author={Dadi Guo and Yuejin Xie and Qingyu Liu and Jiayu Liu and Zhiyuan Fan and Qihan Ren and Shuai Shao and Tianyi Zhou and Dongrui Liu and Yi R. Fung},
       year={2026},
       eprint={2603.03202},
       archivePrefix={arXiv},
       primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2603.03202}, 
+      url={https://arxiv.org/abs/2603.03202},
 }
 ```
 
-## 📜 License
+## License
 
-MIT License - See [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- Paper: [arXiv:2603.03202](https://arxiv.org/abs/2603.03202)
-- GitHub: [https://github.com/TarferSoul/Code2Math](https://github.com/TarferSoul/Code2Math)
-
-## 🤝 Contributing
-
-We welcome contributions! Please feel free to submit issues or pull requests.
-
----
-
-Made with ❤️ by the Code2Math Team
+MIT License. See [LICENSE](LICENSE).
